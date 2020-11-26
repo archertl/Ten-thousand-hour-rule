@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>拖拽</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+    }
+
+    #box {
+      width: 100px;
+      height: 100px;
+      background-color: indianred;
+      cursor: move;
+    }
+
+    #target {
+      width: 500px;
+      height: 300px;
+      margin: 100px auto;
+      border: 1px solid indianred;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="box" draggable="true"></div>
+  <div id="target"></div>
+</body>
+<script>
+  let box = document.getElementById('box');
+  box.addEventListener('dragstart', () => {
+    console.log('拖拽开始');
+  })
+  box.addEventListener('drag', () => {
+    console.log('拖拽中');
+  })
+  box.addEventListener('dragend', () => {
+    console.log('拖拽结束');
+  })
+  let current = document.getElementById('target')
+  current.addEventListener('dragenter', () => {
+    console.log('拖拽到目标target上');
+  })
+  current.addEventListener('dragover', e => {
+    console.log('在目标target上持续拖拽');
+  })
+  current.addEventListener('dragleave', () => {
+    console.log('拖拽离开目标target');
+  })
+  current.addEventListener('drop', e => {
+    console.log('拖拽到目标target上放开');
+    e.target.appendChild(box);
+  })
+</script>
+
+</html>
