@@ -37,7 +37,7 @@ if (asRootData && ob) {
 - 最后返回 ob
 ```
 - 上面这个代码目前还没看出来是做啥的，继续留个疑问
-### Observer构造函数
+### Observer类
 ```javascript
 export class Observer {
   value: any;
@@ -98,3 +98,87 @@ if (Dep.target) {
 - childOb 这个有值就是 val 调 observe函数的返回值 ob，
 - 这里大概总结一下
 - 每层data都会new 一个 Observer 实例，每个 Observer 实例会 new 一个 Dep 实例
+- 如果是对象，每个属性都会设置getter和setter，也会有一个Dep 实例
+- 如果是组数，会遍历每个元素调用 observe函数
+- 这里先不分析 get 内部代码，当使用数据的时候才会执行
+- setter 会执行defineReactive函数里的dep.notify，通知依赖更新视图
+```javascript
+      const value = getter ? getter.call(obj) : val
+      if (newVal === value || (newVal !== newVal && value !== value)) {
+        return
+      }
+      if (process.env.NODE_ENV !== 'production' && customSetter) {
+        customSetter()
+      }
+      if (getter && !setter) return
+      if (setter) {
+        setter.call(obj, newVal)
+      } else {
+        val = newVal
+      }
+      childOb = !shallow && observe(newVal)
+      dep.notify()
+```
+然后又是一堆判断
+### dependArray函数
+- 遍历数组元素，如果元素有 __ob__ 属性，就执行 元素.__ob__.dep.depend()
+- 元素如果是数组，递归调用 dependArray 函数
+### Dep类
+```javascript
+let uid = 0
+export default class Dep {
+  static target: ?Watcher; // 临时存放 Watcher 实例
+  id: number;
+  subs: Array<Watcher>; // 存放相关的 Watcher 实例
+  constructor () {
+    this.id = uid++
+    this.subs = []
+  }
+  addSub (sub: Watcher) { // 添加 Watcher 实例
+    this.subs.push(sub)
+  }
+  removeSub (sub: Watcher) { // 移除 Watcher 实例
+    remove(this.subs, sub)
+  }
+  depend () { // 把 Dep 实例添加到 Watcher 实例上，目前作用不明
+    if (Dep.target) {
+      Dep.target.addDep(this)
+    }
+  }
+  notify () { // 通知所有 Watcher 实例 数据更新了
+    const subs = this.subs.slice()
+    if (process.env.NODE_ENV !== 'production' && !config.async) {
+      subs.sort((a, b) => a.id - b.id)
+    }
+    for (let i = 0, l = subs.length; i < l; i++) {
+      subs[i].update()
+    }
+  }
+}
+```
+- 代码目前到这里走到头了
+- 这些都是初始化data做的一些事情
+- 然后我们会调用$mount方法
+## $mount方法
+- 会执行 mountComponent 
+- 目录：/core/instance/lifecycle.js
+- 这个方法里会执行很多别的代码，这里先不看了
+- 在这里 new Watcher 实例
+### Watcher类
+- new Watcher 会执行 this.get()
+- get 方法里 执行 pushTarget(this)
+- pushTarget所在代码如下：
+```javascript
+Dep.target = null
+const targetStack = []
+export function pushTarget (target: ?Watcher) {
+  targetStack.push(target)
+  Dep.target = target
+}
+export function popTarget () {
+  targetStack.pop()
+  Dep.target = targetStack[targetStack.length - 1]
+}
+```
+- 会将当前的 Watcher 实例存放在 Dep.target 上
+- 最终会调用 popTarget 方法
