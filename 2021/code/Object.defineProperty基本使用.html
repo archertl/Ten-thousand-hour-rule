@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <div id="app">hello</div>
+</body>
+<script>
+  const data = {
+    msg: 'hello'
+  }
+  const vm = {}
+  Object.defineProperty(vm, 'msg', {
+    enumerable: true,// 是否可枚举
+    configurable: true, // 是否可delete删除，是否可通过defineProperty重新定义
+    get() {
+      console.log('get', data.msg);
+      return data.msg
+    },
+    set(newValue) {
+      console.log('set', newValue);
+      if (newValue === data.msg) return
+      data.msg = newValue
+      document.getElementById('app').textContent = data.msg
+
+    }
+  })
+  console.log(vm.msg);
+  vm.msg = 'hello world'
+  console.log(vm.msg);
+</script>
+
+</html>

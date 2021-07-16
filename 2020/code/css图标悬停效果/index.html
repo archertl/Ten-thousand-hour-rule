@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://at.alicdn.com/t/font_2315771_kow310kplo.css">
+  <title>Document</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background-color: #111;
+    }
+
+    ul {
+      display: flex;
+    }
+
+    ul li {
+      list-style: none;
+      margin-right: 20px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    ul li a {
+      text-decoration: none;
+    }
+
+    ul li a .iconfont {
+      font-size: 6em;
+      color: #222;
+    }
+
+    ul li::before {
+      font-family: 'iconfont';
+      position: absolute;
+      left: 0;
+      top: 0;
+      font-size: 6em;
+      height: 0;
+      overflow: hidden;
+      transition: .5s ease-in-out;
+    }
+
+    ul li:nth-child(1):before {
+      content: '\e60d';
+      color: #1da1f2;
+      border-bottom: 4px solid #1da1f2;
+    }
+
+    ul li:nth-child(2):before {
+      content: '\e60b';
+      color: #25d366;
+      border-bottom: 4px solid #25d366;
+    }
+
+    ul li:nth-child(3):before {
+      content: '\e60c';
+      color: #ff0000;
+      border-bottom: 4px solid #ff0000;
+    }
+
+    ul li:hover::before {
+      height: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <ul>
+    <li><a href="#"><i class="iconfont icon-shouye"></i></a></li>
+    <li><a href="#"><i class="iconfont icon-yonghuguanli"></i></a></li>
+    <li><a href="#"><i class="iconfont icon-shezhi"></i></a></li>
+  </ul>
+</body>
+
+</html>
