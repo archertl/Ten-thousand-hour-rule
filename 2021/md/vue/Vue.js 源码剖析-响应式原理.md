@@ -29,7 +29,7 @@ function observe (value: any, asRootData: ?boolean): Observer | void
 ```javascript
 ob = new Observer(value)
 ```
-然后有这段代码
+- 然后有这段代码
 ```javascript
 if (asRootData && ob) {
   ob.vmCount++
@@ -38,6 +38,9 @@ if (asRootData && ob) {
 ```
 - 上面这个代码目前还没看出来是做啥的，继续留个疑问
 ### Observer类
+- 给data创建__ob__ 属性，就是Observer实例
+- walk遍历对象属性，调用defineReactive
+- observeArray遍历数组，将每个元素调用observe
 ```javascript
 export class Observer {
   value: any;
@@ -119,7 +122,6 @@ if (Dep.target) {
       childOb = !shallow && observe(newVal)
       dep.notify()
 ```
-然后又是一堆判断
 ### dependArray函数
 - 遍历数组元素，如果元素有 __ob__ 属性，就执行 元素.__ob__.dep.depend()
 - 元素如果是数组，递归调用 dependArray 函数
@@ -182,3 +184,106 @@ export function popTarget () {
 ```
 - 会将当前的 Watcher 实例存放在 Dep.target 上
 - 最终会调用 popTarget 方法
+## $set
+给对象设置一个响应式属性或者通过下标改变数组元素
+### 定义位置
+- Vue.set：src/core/global-api/index.js
+- vm.$set：src/core/instance/index.js
+上面两个方法都是同一个方法，都是目录 src/core/observer/index.js 导出的 set 方法
+### set 方法
+- 如果是数组，执行以下代码
+```javascript
+target.length = Math.max(target.length, key)
+target.splice(key, 1, val)
+```
+- 然后继续处理对象的情况
+- 获取ob也就是target.__ob__
+- 如果不存在，也就是说明target不是响应式的，那就不管了，返回target[key]
+- 如果存在，执行以下代码：
+```javascript
+defineReactive(ob.value, key, val)
+ob.dep.notify()
+return val
+```
+- 将传入的值使用defineReactive处理一下，具备响应式
+- 调用ob.dep.notify()通知视图更新
+## $delete
+删除对象属性，如果对象是响应式的，确保删除能触发更新视图。这个方法主要用于避开Vue不能检测到属性被删除，但是很少会被用到。既可以删除对象上的属性，也可以通过下标删除数组的元素。
+注意：目标对象不能是一个Vue实例或者Vue实例的根数据对象。
+```javascript
+vm.$delete(vm.obj, 'msg')
+vm.$delete(vm.arr, 0)
+```
+### 定义位置
+- Vue.delete：src/core/global-api/index.js
+- vm.$delete：src/core/instance/index.js
+上面两个方法都是同一个方法，都是目录 src/core/observer/index.js 导出的 del 方法
+### del 方法
+- 和set 方法类似
+- 如果是数组，调用数组的splice方法
+- 如果是对象，获取ob也就是target.__ob__
+- 对象上没有该属性，直接返回
+- 删除属性
+- 判断是否有ob，没有直接返回
+- 有ob，调用ob.dep.notify()
+## $watch
+vm.$watch(expOrFn, cb, [options])
+### 功能
+- 观察Vue实例变化的一个表达式或者计算属性函数
+- 回调函数得到的参数为新值和旧值
+- 表达式只接受监督的键路径
+- 对于更复杂的表达式，用一个函数取代
+### 参数
+- expOrFn：要监视的$data中的属性，可以是表达式或者函数
+- cb：数据变化后要执行的函数。值是函数就是回调函数，也可以是函数数组。值是对象具有handler属性，handler是函数就是回调函数，也可以是函数数组，是字符串则需要在methods中有相应的定义。
+- options：可选项。deep：布尔值，表示是否深度监听。immediate：布尔值，是否立即执行一次。
+### 三种类型的Watcher
+没有静态方法，分为：
+- 计算属性Watcher
+- 用户Watcher
+- 渲染Watcher
+都是vm.$watch，目录：src/core/instance/state.js
+创建顺序：
+- 计算属性Watcher
+- 用户Watcher
+- 渲染Watcher
+## $nextTick
+在下次DOM更新之后执行传入的回调函数
+### 定义位置
+src/core/instance/render.js
+调用$nextTick会调用 nextTick 函数，是 src/core/util/next-tick.js 导出的 nextTick 函数
+### nextTick 函数
+代码如下：
+```javascript
+let pending = false
+export function nextTick (cb?: Function, ctx?: Object) {
+  let _resolve
+  callbacks.push(() => {
+    if (cb) {
+      try {
+        cb.call(ctx)
+      } catch (e) {
+        handleError(e, ctx, 'nextTick')
+      }
+    } else if (_resolve) {
+      _resolve(ctx)
+    }
+  })
+  if (!pending) {
+    pending = true
+    timerFunc()
+  }
+  // $flow-disable-line
+  if (!cb && typeof Promise !== 'undefined') {
+    return new Promise(resolve => {
+      _resolve = resolve
+    })
+  }
+}
+```
+- _resolve在最后定义的，用来控制nextTick返回的Promise成功
+- callbacks中存放一个个函数
+- 函数中，如果cb存在就try catch执行一下函数把ctx传入
+- 如果没有cb不存在，会nextTick返回的Promise成功，将ctx传入
+- timerFunc函数是根据浏览器是否兼容Promise、MutationObserver、setImmediate做降级处理
+- 执行timerFunc函数就是，先将pending置为false，遍历callbacks执行每一个函数，并清空callbacks
